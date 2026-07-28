@@ -17,15 +17,23 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float walkSpeed = 5f;
     [SerializeField] private float crouchMoveSpeed = 2f;
     [SerializeField] private float jumpHeight = 1.5f;
+    [SerializeField] private float proneHeight = 0.5f;
+    [SerializeField] private float proneMoveSpeed = 1f;
+    [SerializeField] private float proneCenter = 0.25f;
+    [SerializeField] private float crouchSprintSpeed = 3.5f;
+    [SerializeField] private float proneSprintSpeed = 1.8f;
     [SerializeField] private Transform visualMeshTransform;
 
-    private bool isCrouching;
+    private PlayerState playerState = PlayerState.Standing;
     private Vector3 velocity;
+    private Stamina stamina;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
         inputActions = new InputSystem_Actions();
+
+        stamina = GetComponent<Stamina>();
     }
 
     private void OnEnable() => inputActions.Enable();
@@ -35,7 +43,7 @@ public class PlayerController : MonoBehaviour
     {
         Vector2 moveInput = inputActions.Player.Move.ReadValue<Vector2>();
 
-        bool isSprinting = inputActions.Player.Sprint.IsPressed() && !isCrouching;
+        bool isSprinting = inputActions.Player.Sprint.IsPressed() && stamina.CanSprint();
 
         Vector3 forward = cameraTransform.forward;
         Vector3 right = cameraTransform.right;
@@ -59,36 +67,90 @@ public class PlayerController : MonoBehaviour
             velocity.y += gravity * Time.deltaTime;
         }
 
-        if (characterController.isGrounded && !isCrouching && inputActions.Player.Jump.WasPressedThisFrame())
+        if (characterController.isGrounded &&
+            playerState == PlayerState.Standing &&
+            inputActions.Player.Jump.WasPressedThisFrame())
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
         }
 
         float currentSpeed;
 
-        if (isCrouching)
+        switch (playerState)
         {
-            currentSpeed = crouchMoveSpeed;
-        }
-        else if (isSprinting)
-        {
-            currentSpeed = sprintSpeed;
-        }
-        else
-        {
-            currentSpeed = walkSpeed;
+            case PlayerState.Standing:
+                currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
+                break;
+
+            case PlayerState.Crouching:
+                currentSpeed = isSprinting ? crouchSprintSpeed : crouchMoveSpeed;
+                break;
+
+            case PlayerState.Prone:
+                currentSpeed = isSprinting ? proneSprintSpeed : proneMoveSpeed;
+                break;
+
+            default:
+                currentSpeed = walkSpeed;
+                break;
         }
 
         Vector3 finalMovement = (movement * currentSpeed) + velocity;
         characterController.Move(finalMovement * Time.deltaTime);
 
-        if (characterController.isGrounded && inputActions.Player.Crouch.WasPressedThisFrame())
+        if (isSprinting && movement.magnitude > 0.1f)
         {
-            isCrouching = !isCrouching;
+            stamina.Drain();
+        }
+        else
+        {
+            stamina.Regenerate();
         }
 
-        float targetHeight = isCrouching ? crouchHeight : standingHeight;
-        float targetCenter = isCrouching ? crouchCenter : standingCenter;
+        if (characterController.isGrounded && inputActions.Player.Crouch.WasPressedThisFrame())
+        {
+            playerState = playerState == PlayerState.Crouching
+            ? PlayerState.Standing
+            : PlayerState.Crouching;
+        }
+
+        if (characterController.isGrounded &&
+            inputActions.Player.Prone.WasPressedThisFrame())
+        {
+            playerState = playerState == PlayerState.Prone
+            ? PlayerState.Standing
+            : PlayerState.Prone;
+        }
+
+        float targetHeight;
+
+        if (playerState == PlayerState.Prone)
+        {
+            targetHeight = proneHeight;
+        }
+        else if (playerState == PlayerState.Crouching)
+        {
+            targetHeight = crouchHeight;
+        }
+        else
+        {
+            targetHeight = standingHeight;
+        }
+
+        float targetCenter;
+
+        if (playerState == PlayerState.Prone)
+        {
+            targetCenter = proneCenter;
+        }
+        else if (playerState == PlayerState.Crouching)
+        {
+            targetCenter = crouchCenter;
+        }
+        else
+        {
+            targetCenter = standingCenter;
+        }
 
         characterController.height = Mathf.Lerp(characterController.height, targetHeight, crouchSpeed * Time.deltaTime);
 
