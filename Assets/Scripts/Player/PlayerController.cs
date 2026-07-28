@@ -13,8 +13,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float crouchHeight = 1f;
     [SerializeField] private float standingHeight = 2f;
     [SerializeField] private float crouchSpeed = 8f;
+    [SerializeField] private float sprintSpeed = 8f;
     [SerializeField] private float walkSpeed = 5f;
     [SerializeField] private float crouchMoveSpeed = 2f;
+    [SerializeField] private float jumpHeight = 1.5f;
     [SerializeField] private Transform visualMeshTransform;
 
     private bool isCrouching;
@@ -32,6 +34,8 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Vector2 moveInput = inputActions.Player.Move.ReadValue<Vector2>();
+
+        bool isSprinting = inputActions.Player.Sprint.IsPressed() && !isCrouching;
 
         Vector3 forward = cameraTransform.forward;
         Vector3 right = cameraTransform.right;
@@ -55,11 +59,30 @@ public class PlayerController : MonoBehaviour
             velocity.y += gravity * Time.deltaTime;
         }
 
-        float currentSpeed = isCrouching ? crouchMoveSpeed : walkSpeed;
+        if (characterController.isGrounded && !isCrouching && inputActions.Player.Jump.WasPressedThisFrame())
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
+
+        float currentSpeed;
+
+        if (isCrouching)
+        {
+            currentSpeed = crouchMoveSpeed;
+        }
+        else if (isSprinting)
+        {
+            currentSpeed = sprintSpeed;
+        }
+        else
+        {
+            currentSpeed = walkSpeed;
+        }
+
         Vector3 finalMovement = (movement * currentSpeed) + velocity;
         characterController.Move(finalMovement * Time.deltaTime);
 
-        if (inputActions.Player.Crouch.WasPressedThisFrame())
+        if (characterController.isGrounded && inputActions.Player.Crouch.WasPressedThisFrame())
         {
             isCrouching = !isCrouching;
         }
