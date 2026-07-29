@@ -98,9 +98,22 @@ public class PlayerController : MonoBehaviour
         Vector3 finalMovement = (movement * currentSpeed) + velocity;
         characterController.Move(finalMovement * Time.deltaTime);
 
-        if (isSprinting && movement.magnitude > 0.1f)
+        if (movement.magnitude > 0.1f && isSprinting)
         {
-            stamina.Drain();
+            switch (playerState)
+            {
+                case PlayerState.Standing:
+                    stamina.Drain(stamina.SprintDrain);
+                    break;
+
+                case PlayerState.Crouching:
+                    stamina.Drain(stamina.CrouchDrain);
+                    break;
+
+                case PlayerState.Prone:
+                    stamina.Drain(stamina.ProneDrain);
+                    break;
+            }
         }
         else
         {
