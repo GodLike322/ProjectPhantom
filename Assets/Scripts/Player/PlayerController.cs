@@ -22,7 +22,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float proneCenter = 0.25f;
     [SerializeField] private float crouchSprintSpeed = 3.5f;
     [SerializeField] private float proneSprintSpeed = 1.8f;
+    [SerializeField] private float slowWalkSpeed = 2.5f;
+    [SerializeField] private float slowCrouchSpeed = 1f;
+    [SerializeField] private float slowProneSpeed = 0.5f;
     [SerializeField] private Transform visualMeshTransform;
+    [SerializeField] private float acceleration = 8f;
+    [SerializeField] private float deceleration = 10f;
+
+    private float currentSpeed;
+
+    public bool IsSprinting { get; private set; }
 
     private PlayerState playerState = PlayerState.Standing;
     private Vector3 velocity;
@@ -34,6 +43,7 @@ public class PlayerController : MonoBehaviour
         inputActions = new InputSystem_Actions();
 
         stamina = GetComponent<Stamina>();
+        currentSpeed = walkSpeed;
     }
 
     private void OnEnable() => inputActions.Enable();
@@ -41,23 +51,71 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        Vector2 moveInput = inputActions.Player.Move.ReadValue<Vector2>();
+        bool sprintButton = inputActions.Player.Sprint.IsPressed();
 
-        bool isSprinting = inputActions.Player.Sprint.IsPressed() && stamina.CanSprint();
+        IsSprinting =
+            sprintButton &&
+            stamina.CanSprint() &&
+            playerState == PlayerState.Standing;
 
-        Vector3 forward = cameraTransform.forward;
-        Vector3 right = cameraTransform.right;
-        forward.y = 0; right.y = 0;
-        forward.Normalize(); right.Normalize();
+        bool isWalkingSlow = inputActions.Player.Walk.IsPressed();
 
-        Vector3 movement = forward * moveInput.y + right * moveInput.x;
+        Vector3 movement = GetMovement();
 
-        if (movement.magnitude > 0.1f)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(movement);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-        }
+        HandleRotation(movement);
 
+        HandleGravity();
+
+        HandleJump();
+
+        float targetSpeed = GetCurrentSpeed(IsSprinting, isWalkingSlow);
+
+        float speedChange = targetSpeed > currentSpeed ? acceleration : deceleration;
+
+        currentSpeed = Mathf.Lerp(
+            currentSpeed,
+            targetSpeed,
+            speedChange * Time.deltaTime
+        );
+
+        Vector3 finalMovement = (movement * currentSpeed) + velocity;
+
+        Debug.Log(
+            $"State: {playerState} | " +
+            $"SprintButton: {sprintButton} | " +
+            $"IsSprinting: {IsSprinting} | " +
+            $"Speed: {currentSpeed} | " +
+            $"Stamina: {stamina.CurrentStamina}"
+        );
+
+        characterController.Move(finalMovement * Time.deltaTime);
+
+        HandleStamina(movement, IsSprinting);
+
+        HandleStateChanges();
+
+        UpdateCharacterController();
+
+        UpdateVisual();
+    }
+
+    // Updates the visual representation of the player based on the current state (standing, crouching, prone).
+    private void HandleRotation(Vector3 movement)
+    {
+        if (movement.magnitude <= 0.1f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(movement);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSpeed * Time.deltaTime
+        );
+    }
+
+    private void HandleGravity()
+    {
         if (characterController.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
@@ -66,122 +124,257 @@ public class PlayerController : MonoBehaviour
         {
             velocity.y += gravity * Time.deltaTime;
         }
+    }
 
-        if (characterController.isGrounded &&
-            playerState == PlayerState.Standing &&
-            inputActions.Player.Jump.WasPressedThisFrame())
+    private void HandleJump()
+    {
+        if (!characterController.isGrounded)
+            return;
+
+        if (playerState != PlayerState.Standing)
+            return;
+
+        if (!inputActions.Player.Jump.WasPressedThisFrame())
+            return;
+
+        velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+    }
+
+    // Get the current speed based on the player's state and input
+    private Vector3 GetMovement()
+    {
+        Vector2 moveInput = inputActions.Player.Move.ReadValue<Vector2>();
+
+        Vector3 forward = cameraTransform.forward;
+        Vector3 right = cameraTransform.right;
+
+        forward.y = 0;
+        right.y = 0;
+
+        forward.Normalize();
+        right.Normalize();
+
+        return forward * moveInput.y + right * moveInput.x;
+    }
+
+    // Returns the current speed based on the player's state and input
+    private float GetCurrentSpeed(bool isSprinting, bool isWalkingSlow)
+    {
+        switch (playerState)
         {
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            case PlayerState.Standing:
+
+                if (isSprinting)
+                    return sprintSpeed;
+
+                if (isWalkingSlow)
+                    return slowWalkSpeed;
+
+                return walkSpeed;
+
+
+            case PlayerState.Crouching:
+
+                if (isSprinting)
+                    return crouchSprintSpeed;
+
+                if (isWalkingSlow)
+                    return slowCrouchSpeed;
+
+                return crouchMoveSpeed;
+
+
+            case PlayerState.Prone:
+
+                if (isSprinting)
+                    return proneSprintSpeed;
+
+                if (isWalkingSlow)
+                    return slowProneSpeed;
+
+                return proneMoveSpeed;
+
+
+            default:
+                return walkSpeed;
+        }
+    }
+
+    // Handle stamina drain and regeneration based on movement and sprinting
+    private void HandleStamina(Vector3 movement, bool isSprinting)
+    {
+        if (movement.magnitude <= 0.1f)
+        {
+            stamina.Regenerate();
+            return;
         }
 
-        float currentSpeed;
+
+        if (!isSprinting)
+        {
+            stamina.Regenerate();
+            return;
+        }
+
 
         switch (playerState)
         {
             case PlayerState.Standing:
-                currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
+                stamina.Drain(stamina.SprintDrain);
                 break;
+
 
             case PlayerState.Crouching:
-                currentSpeed = isSprinting ? crouchSprintSpeed : crouchMoveSpeed;
+                stamina.Drain(stamina.CrouchDrain);
                 break;
+
 
             case PlayerState.Prone:
-                currentSpeed = isSprinting ? proneSprintSpeed : proneMoveSpeed;
-                break;
-
-            default:
-                currentSpeed = walkSpeed;
+                stamina.Drain(stamina.ProneDrain);
                 break;
         }
+    }
 
-        Vector3 finalMovement = (movement * currentSpeed) + velocity;
-        characterController.Move(finalMovement * Time.deltaTime);
+    // Handle state changes based on input and current state
+    private void HandleStateChanges()
+    {
+        if (!characterController.isGrounded)
+            return;
 
-        if (movement.magnitude > 0.1f && isSprinting)
+        if (inputActions.Player.Crouch.WasPressedThisFrame())
         {
             switch (playerState)
             {
                 case PlayerState.Standing:
-                    stamina.Drain(stamina.SprintDrain);
+                    playerState = PlayerState.Crouching;
                     break;
 
                 case PlayerState.Crouching:
-                    stamina.Drain(stamina.CrouchDrain);
+                    playerState = PlayerState.Standing;
                     break;
 
                 case PlayerState.Prone:
-                    stamina.Drain(stamina.ProneDrain);
+                    playerState = PlayerState.Crouching;
                     break;
             }
         }
-        else
-        {
-            stamina.Regenerate();
-        }
 
-        if (characterController.isGrounded && inputActions.Player.Crouch.WasPressedThisFrame())
+        if (inputActions.Player.Prone.WasPressedThisFrame())
         {
-            playerState = playerState == PlayerState.Crouching
-            ? PlayerState.Standing
-            : PlayerState.Crouching;
-        }
+            switch (playerState)
+            {
+                case PlayerState.Standing:
+                    playerState = PlayerState.Prone;
+                    break;
 
-        if (characterController.isGrounded &&
-            inputActions.Player.Prone.WasPressedThisFrame())
-        {
-            playerState = playerState == PlayerState.Prone
-            ? PlayerState.Standing
-            : PlayerState.Prone;
-        }
+                case PlayerState.Crouching:
+                    playerState = PlayerState.Prone;
+                    break;
 
+                case PlayerState.Prone:
+                    playerState = PlayerState.Standing;
+                    break;
+            }
+        }
+    }
+
+    // Handle the player's death state
+    private void UpdateCharacterController()
+    {
         float targetHeight;
 
-        if (playerState == PlayerState.Prone)
+        switch (playerState)
         {
-            targetHeight = proneHeight;
-        }
-        else if (playerState == PlayerState.Crouching)
-        {
-            targetHeight = crouchHeight;
-        }
-        else
-        {
-            targetHeight = standingHeight;
+            case PlayerState.Prone:
+                targetHeight = proneHeight;
+                break;
+
+            case PlayerState.Crouching:
+                targetHeight = crouchHeight;
+                break;
+
+            default:
+                targetHeight = standingHeight;
+                break;
         }
 
         float targetCenter;
 
-        if (playerState == PlayerState.Prone)
+        switch (playerState)
         {
-            targetCenter = proneCenter;
-        }
-        else if (playerState == PlayerState.Crouching)
-        {
-            targetCenter = crouchCenter;
-        }
-        else
-        {
-            targetCenter = standingCenter;
+            case PlayerState.Prone:
+                targetCenter = proneCenter;
+                break;
+
+            case PlayerState.Crouching:
+                targetCenter = crouchCenter;
+                break;
+
+            default:
+                targetCenter = standingCenter;
+                break;
         }
 
-        characterController.height = Mathf.Lerp(characterController.height, targetHeight, crouchSpeed * Time.deltaTime);
+        characterController.height = Mathf.Lerp(
+            characterController.height,
+            targetHeight,
+            crouchSpeed * Time.deltaTime
+        );
 
         Vector3 currentCenter = characterController.center;
-        currentCenter.y = Mathf.Lerp(currentCenter.y, targetCenter, crouchSpeed * Time.deltaTime);
+
+        currentCenter.y = Mathf.Lerp(
+            currentCenter.y,
+            targetCenter,
+            crouchSpeed * Time.deltaTime
+        );
+
         characterController.center = currentCenter;
+    }
 
-        if (visualMeshTransform != null)
+    // Update the visual representation of the player based on the current state
+    private void UpdateVisual()
+    {
+        if (visualMeshTransform == null)
+            return;
+
+        float targetScaleY = characterController.height / standingHeight;
+
+        Vector3 currentScale = visualMeshTransform.localScale;
+
+        currentScale.y = Mathf.Lerp(
+            currentScale.y,
+            targetScaleY,
+            crouchSpeed * Time.deltaTime
+        );
+
+        visualMeshTransform.localScale = currentScale;
+
+        float targetCenter;
+
+        switch (playerState)
         {
-            float targetScaleY = characterController.height / standingHeight;
+            case PlayerState.Prone:
+                targetCenter = proneCenter;
+                break;
 
-            Vector3 currentScale = visualMeshTransform.localScale;
-            currentScale.y = Mathf.Lerp(currentScale.y, targetScaleY, crouchSpeed * Time.deltaTime);
-            visualMeshTransform.localScale = currentScale;
+            case PlayerState.Crouching:
+                targetCenter = crouchCenter;
+                break;
 
-            Vector3 currentMeshPos = visualMeshTransform.localPosition;
-            currentMeshPos.y = Mathf.Lerp(currentMeshPos.y, targetCenter, crouchSpeed * Time.deltaTime);
-            visualMeshTransform.localPosition = currentMeshPos;
+            default:
+                targetCenter = standingCenter;
+                break;
         }
+
+        Vector3 currentMeshPos = visualMeshTransform.localPosition;
+
+        currentMeshPos.y = Mathf.Lerp(
+            currentMeshPos.y,
+            targetCenter,
+            crouchSpeed * Time.deltaTime
+        );
+
+        visualMeshTransform.localPosition = currentMeshPos;
     }
 }

@@ -386,6 +386,11 @@ MonoBehaviour:
   distance: 5
   height: 2
   mouseSensitivity: 3
+  playerCamera: {fileID: 238494766}
+  normalFOV: 60
+  sprintFOV: 75
+  fovSpeed: 8
+  playerController: {fileID: 705386974}
 --- !u!1 &705386969
 GameObject:
   m_ObjectHideFlags: 0
@@ -476,7 +481,12 @@ MonoBehaviour:
   proneCenter: 0.25
   crouchSprintSpeed: 3.5
   proneSprintSpeed: 1.8
+  slowWalkSpeed: 2.5
+  slowCrouchSpeed: 1
+  slowProneSpeed: 0.5
   visualMeshTransform: {fileID: 2072494596}
+  acceleration: 8
+  deceleration: 10
 --- !u!143 &705386975
 CharacterController:
   m_ObjectHideFlags: 0
@@ -516,7 +526,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Stamina
   maxStamina: 100
   currentStamina: 100
-  drainPerSecond: 20
+  sprintDrain: 20
+  crouchDrain: 10
+  proneDrain: 5
   regenPerSecond: 10
 --- !u!1 &1782265306
 GameObject:

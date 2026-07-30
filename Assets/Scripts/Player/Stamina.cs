@@ -16,20 +16,36 @@ public class Stamina : MonoBehaviour
     public float CrouchDrain => crouchDrain;
     public float ProneDrain => proneDrain;
 
+    private bool exhausted;
+
     public bool CanSprint()
     {
-        return currentStamina > 5f;
+        return !exhausted && currentStamina > 0f;
     }
 
     public void Drain(float amount)
     {
         currentStamina -= amount * Time.deltaTime;
-        currentStamina = Mathf.Max(currentStamina, 0f);
+
+        if (currentStamina <= 0)
+        {
+            currentStamina = 0;
+            exhausted = true;
+        }
     }
 
     public void Regenerate()
     {
         currentStamina += regenPerSecond * Time.deltaTime;
-        currentStamina = Mathf.Min(currentStamina, maxStamina);
+
+        currentStamina = Mathf.Min(
+            currentStamina,
+            maxStamina
+        );
+
+        if (currentStamina >= 20f)
+        {
+            exhausted = false;
+        }
     }
 }
