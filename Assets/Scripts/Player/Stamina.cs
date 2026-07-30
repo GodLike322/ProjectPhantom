@@ -10,6 +10,8 @@ public class Stamina : MonoBehaviour
     [SerializeField] private float proneDrain = 5f;
     [SerializeField] private float regenPerSecond = 10f;
 
+    [SerializeField] private float recoverThreshold = 20f;
+
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
     public float SprintDrain => sprintDrain;
@@ -27,9 +29,9 @@ public class Stamina : MonoBehaviour
     {
         currentStamina -= amount * Time.deltaTime;
 
-        if (currentStamina <= 0)
+        if (currentStamina <= 0f)
         {
-            currentStamina = 0;
+            currentStamina = 0f;
             exhausted = true;
         }
     }
@@ -43,7 +45,7 @@ public class Stamina : MonoBehaviour
             maxStamina
         );
 
-        if (currentStamina >= 20f)
+        if (currentStamina >= recoverThreshold)
         {
             exhausted = false;
         }

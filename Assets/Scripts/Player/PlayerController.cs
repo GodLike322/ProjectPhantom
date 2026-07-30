@@ -31,11 +31,12 @@ public class PlayerController : MonoBehaviour
 
     private float currentSpeed;
 
-    public bool IsSprinting { get; private set; }
+    public bool IsBoosting { get; private set; }
 
     private PlayerState playerState = PlayerState.Standing;
     private Vector3 velocity;
     private Stamina stamina;
+    public PlayerState CurrentState => playerState;
 
     private void Awake()
     {
@@ -53,10 +54,11 @@ public class PlayerController : MonoBehaviour
     {
         bool sprintButton = inputActions.Player.Sprint.IsPressed();
 
-        IsSprinting =
-            sprintButton &&
-            stamina.CanSprint() &&
-            playerState == PlayerState.Standing;
+        IsBoosting = sprintButton && stamina.CanSprint();
+
+        Debug.Log(
+            $"State: {playerState}, Shift: {sprintButton}, CanSprint: {stamina.CanSprint()}, Sprint: {IsBoosting}, Stamina: {stamina.CurrentStamina}"
+        );
 
         bool isWalkingSlow = inputActions.Player.Walk.IsPressed();
 
@@ -68,7 +70,7 @@ public class PlayerController : MonoBehaviour
 
         HandleJump();
 
-        float targetSpeed = GetCurrentSpeed(IsSprinting, isWalkingSlow);
+        float targetSpeed = GetCurrentSpeed(IsBoosting, isWalkingSlow);
 
         float speedChange = targetSpeed > currentSpeed ? acceleration : deceleration;
 
@@ -80,17 +82,9 @@ public class PlayerController : MonoBehaviour
 
         Vector3 finalMovement = (movement * currentSpeed) + velocity;
 
-        Debug.Log(
-            $"State: {playerState} | " +
-            $"SprintButton: {sprintButton} | " +
-            $"IsSprinting: {IsSprinting} | " +
-            $"Speed: {currentSpeed} | " +
-            $"Stamina: {stamina.CurrentStamina}"
-        );
-
         characterController.Move(finalMovement * Time.deltaTime);
 
-        HandleStamina(movement, IsSprinting);
+        HandleStamina(movement, IsBoosting);
 
         HandleStateChanges();
 
