@@ -54,15 +54,18 @@ public class PlayerController : MonoBehaviour
     {
         bool sprintButton = inputActions.Player.Sprint.IsPressed();
 
-        IsBoosting = sprintButton && stamina.CanSprint();
+        Vector3 movement = GetMovement();
+
+        IsBoosting =
+            sprintButton &&
+            stamina.CanSprint() &&
+            movement.magnitude > 0.1f;
 
         Debug.Log(
             $"State: {playerState}, Shift: {sprintButton}, CanSprint: {stamina.CanSprint()}, Sprint: {IsBoosting}, Stamina: {stamina.CurrentStamina}"
         );
 
         bool isWalkingSlow = inputActions.Player.Walk.IsPressed();
-
-        Vector3 movement = GetMovement();
 
         HandleRotation(movement);
 
@@ -272,103 +275,97 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Handle the player's death state
+    // Обновление размеров физического коллайдера CharacterController
     private void UpdateCharacterController()
     {
         float targetHeight;
+        float targetCenter;
 
+        // Определяем физические размеры капсулы под каждую стойку
         switch (playerState)
         {
             case PlayerState.Prone:
                 targetHeight = proneHeight;
-                break;
-
-            case PlayerState.Crouching:
-                targetHeight = crouchHeight;
-                break;
-
-            default:
-                targetHeight = standingHeight;
-                break;
-        }
-
-        float targetCenter;
-
-        switch (playerState)
-        {
-            case PlayerState.Prone:
                 targetCenter = proneCenter;
                 break;
-
             case PlayerState.Crouching:
+                targetHeight = crouchHeight;
                 targetCenter = crouchCenter;
                 break;
-
             default:
+                targetHeight = standingHeight;
                 targetCenter = standingCenter;
                 break;
         }
 
+        // Плавно меняем высоту коллайдера
         characterController.height = Mathf.Lerp(
             characterController.height,
             targetHeight,
             crouchSpeed * Time.deltaTime
         );
 
+        // Плавно смещаем центр коллайдера, чтобы ноги не уходили под землю
         Vector3 currentCenter = characterController.center;
-
         currentCenter.y = Mathf.Lerp(
             currentCenter.y,
             targetCenter,
             crouchSpeed * Time.deltaTime
         );
-
         characterController.center = currentCenter;
     }
 
-    // Update the visual representation of the player based on the current state
+    // Изменение визуального масштаба и позиции меша (Капсулы/Модели)
     private void UpdateVisual()
     {
         if (visualMeshTransform == null)
             return;
 
-        float targetScaleY = characterController.height / standingHeight;
+        // 1. Расчет масштаба по оси Y (сжатие модели)
+        float targetScaleY;
+        switch (playerState)
+        {
+            case PlayerState.Prone:
+                targetScaleY = proneHeight / standingHeight; // Около 0.25
+                break;
+            case PlayerState.Crouching:
+                targetScaleY = crouchHeight / standingHeight; // Около 0.5
+                break;
+            default:
+                targetScaleY = 1f; // Полный рост
+                break;
+        }
 
         Vector3 currentScale = visualMeshTransform.localScale;
-
         currentScale.y = Mathf.Lerp(
             currentScale.y,
             targetScaleY,
             crouchSpeed * Time.deltaTime
         );
-
         visualMeshTransform.localScale = currentScale;
 
+        // 2. Расчет позиции меша по Y (привязка к центру коллайдера)
         float targetCenter;
-
         switch (playerState)
         {
             case PlayerState.Prone:
                 targetCenter = proneCenter;
                 break;
-
             case PlayerState.Crouching:
                 targetCenter = crouchCenter;
                 break;
-
             default:
                 targetCenter = standingCenter;
                 break;
         }
 
         Vector3 currentMeshPos = visualMeshTransform.localPosition;
-
         currentMeshPos.y = Mathf.Lerp(
             currentMeshPos.y,
             targetCenter,
             crouchSpeed * Time.deltaTime
         );
-
         visualMeshTransform.localPosition = currentMeshPos;
     }
 }
+

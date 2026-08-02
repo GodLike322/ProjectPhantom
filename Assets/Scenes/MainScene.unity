@@ -241,6 +241,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 229052947}
+  - component: {fileID: 229052948}
   m_Layer: 0
   m_Name: CameraPivot
   m_TagString: Untagged
@@ -256,14 +257,45 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 229052946}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 238494767}
-  m_Father: {fileID: 705386973}
+  - {fileID: 1415118449}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &229052948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 229052946}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1802144e9d383134cb872568850a849a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ThirdPersonCamera
+  target: {fileID: 1782265307}
+  distance: 5
+  mouseSensitivity: 3
+  playerCamera: {fileID: 238494766}
+  normalFOV: 60
+  sprintFOV: 75
+  fovSpeed: 8
+  playerController: {fileID: 705386974}
+  standingHeight: 3
+  crouchHeight: 2
+  proneHeight: 0.8
+  heightSmoothSpeed: 8
+  crouchFOV: 55
+  proneFOV: 50
+  crouchTilt: 3
+  proneTilt: 7
+  tiltSpeed: 5
+  cameraPivot: {fileID: 229052947}
+  cameraHolder: {fileID: 1415118449}
 --- !u!1 &238494764
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,13 +383,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 238494764}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.17364816, y: -0, z: -0, w: 0.9848078}
-  m_LocalPosition: {x: 0, y: 3, z: -5}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 229052947}
-  m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
+  m_Father: {fileID: 1415118449}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &238494768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -411,29 +443,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 238494764}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1802144e9d383134cb872568850a849a, type: 3}
+  m_Script: {fileID: 11500000, guid: 7f82cbb93fadc7f45a956dfae4b1d6f7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ThirdPersonCamera
-  target: {fileID: 1782265307}
-  distance: 5
-  mouseSensitivity: 3
-  playerCamera: {fileID: 238494766}
-  normalFOV: 60
-  sprintFOV: 75
-  fovSpeed: 8
-  normalHeight: 3
-  sprintHeight: 2.7
-  heightSpeed: 5
-  playerController: {fileID: 705386974}
-  standingHeight: 3
-  crouchHeight: 2
-  proneHeight: 0.8
-  heightSmoothSpeed: 8
-  crouchFOV: 55
-  proneFOV: 50
-  crouchTilt: 3
-  proneTilt: 7
-  tiltSpeed: 5
+  m_EditorClassIdentifier: Assembly-CSharp::CameraLean
+  leanSpeed: 8
+  maxLeanAngle: 15
 --- !u!1 &705386969
 GameObject:
   m_ObjectHideFlags: 0
@@ -492,7 +506,6 @@ Transform:
   m_Children:
   - {fileID: 1782265307}
   - {fileID: 2072494596}
-  - {fileID: 229052947}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &705386974
@@ -574,6 +587,38 @@ MonoBehaviour:
   proneDrain: 5
   regenPerSecond: 10
   recoverThreshold: 20
+--- !u!1 &1415118448
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1415118449}
+  m_Layer: 0
+  m_Name: 'CameraHolder '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1415118449
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1415118448}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 238494767}
+  m_Father: {fileID: 229052947}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1782265306
 GameObject:
   m_ObjectHideFlags: 0
@@ -898,3 +943,4 @@ SceneRoots:
   - {fileID: 1976185601}
   - {fileID: 159025476}
   - {fileID: 705386973}
+  - {fileID: 229052947}
