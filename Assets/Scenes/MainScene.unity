@@ -309,6 +309,7 @@ GameObject:
   - component: {fileID: 238494765}
   - component: {fileID: 238494768}
   - component: {fileID: 238494769}
+  - component: {fileID: 238494770}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -448,6 +449,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraLean
   leanSpeed: 8
   maxLeanAngle: 15
+--- !u!114 &238494770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 238494764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f04135b4c0517545b52b74bf0f0eb2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeadBob
+  playerController: {fileID: 705386974}
+  walkBobSpeed: 10
+  sprintBobSpeed: 14
+  crouchBobSpeed: 6
+  walkBobAmount: 0.05
+  sprintBobAmount: 0.12
+  crouchBobAmount: 0.02
+  smooth: 10
 --- !u!1 &705386969
 GameObject:
   m_ObjectHideFlags: 0
@@ -644,7 +665,7 @@ Transform:
   m_GameObject: {fileID: 1782265306}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.6, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

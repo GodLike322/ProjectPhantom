@@ -28,13 +28,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform visualMeshTransform;
     [SerializeField] private float acceleration = 8f;
     [SerializeField] private float deceleration = 10f;
+    [SerializeField] private float diveForce = 12f;
+    [SerializeField] private float diveDuration = 0.4f;
+    [SerializeField] private float diveCooldown = 1f;
+    [SerializeField] private float normalDiveForce = 6f;
+    [SerializeField] private float sprintDiveForce = 12f;
 
     private float currentSpeed;
 
     public bool IsBoosting { get; private set; }
+    public bool IsDiving => playerState == PlayerState.Diving;
 
     private PlayerState playerState = PlayerState.Standing;
     private Vector3 velocity;
+    private Vector3 diveVelocity;
+    private float diveTimer;
+    private float lastDiveTime;
     private Stamina stamina;
     public PlayerState CurrentState => playerState;
 
@@ -61,11 +70,11 @@ public class PlayerController : MonoBehaviour
             stamina.CanSprint() &&
             movement.magnitude > 0.1f;
 
-        Debug.Log(
-            $"State: {playerState}, Shift: {sprintButton}, CanSprint: {stamina.CanSprint()}, Sprint: {IsBoosting}, Stamina: {stamina.CurrentStamina}"
-        );
-
         bool isWalkingSlow = inputActions.Player.Walk.IsPressed();
+
+        HandleDive(movement);
+
+        UpdateDive();
 
         HandleRotation(movement);
 
@@ -84,6 +93,11 @@ public class PlayerController : MonoBehaviour
         );
 
         Vector3 finalMovement = (movement * currentSpeed) + velocity;
+
+        if (playerState == PlayerState.Diving)
+        {
+            finalMovement += diveVelocity;
+        }
 
         characterController.Move(finalMovement * Time.deltaTime);
 
@@ -180,6 +194,8 @@ public class PlayerController : MonoBehaviour
 
                 return crouchMoveSpeed;
 
+            case PlayerState.Diving:
+                return 0;
 
             case PlayerState.Prone:
 
@@ -366,6 +382,57 @@ public class PlayerController : MonoBehaviour
             crouchSpeed * Time.deltaTime
         );
         visualMeshTransform.localPosition = currentMeshPos;
+    }
+
+    // Запуск падения на живот
+    private void HandleDive(Vector3 movement)
+    {
+        // Нельзя делать dive лёжа
+        if (playerState != PlayerState.Standing)
+            return;
+
+        // Нажали Z
+        if (!inputActions.Player.Dive.WasPressedThisFrame())
+            return;
+
+        playerState = PlayerState.Diving;
+
+        diveTimer = diveDuration;
+
+        // Если игрок двигается - летим вперёд
+        if (movement.magnitude > 0.1f)
+        {
+            float force = IsBoosting
+                ? sprintDiveForce
+                : normalDiveForce;
+
+            diveVelocity = movement.normalized * force;
+        }
+        else
+        {
+            // Стоим на месте - просто падаем вниз
+            diveVelocity = Vector3.zero;
+        }
+    }
+
+    // Controls dive duration and switches player to prone after dive
+    private void UpdateDive()
+    {
+        if (playerState != PlayerState.Diving)
+            return;
+
+        diveTimer -= Time.deltaTime;
+
+        diveVelocity = Vector3.Lerp(
+            diveVelocity,
+            Vector3.zero,
+            5f * Time.deltaTime
+        );
+
+        if (diveTimer <= 0)
+        {
+            playerState = PlayerState.Prone;
+        }
     }
 }
 

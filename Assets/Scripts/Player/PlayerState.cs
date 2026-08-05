@@ -4,5 +4,6 @@ public enum PlayerState
 {
     Standing,
     Crouching,
-    Prone
+    Prone,
+    Diving
 }

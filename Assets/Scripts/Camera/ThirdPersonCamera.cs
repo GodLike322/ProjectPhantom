@@ -130,6 +130,9 @@ public class ThirdPersonCamera : MonoBehaviour
             case PlayerState.Crouching:
                 return crouchHeight;
 
+            case PlayerState.Diving:
+                return proneHeight;
+
             case PlayerState.Prone:
                 return proneHeight;
 

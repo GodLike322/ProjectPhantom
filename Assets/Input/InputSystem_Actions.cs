@@ -159,7 +159,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""name"": ""Next"",
                     ""type"": ""Button"",
                     ""id"": ""b7230bb6-fc9b-4f52-8b25-f5e19cb2c2ba"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -204,6 +204,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""name"": ""LeanRight"",
                     ""type"": ""Button"",
                     ""id"": ""29a7bf8b-4764-4e0f-b55f-b020029a79c3"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Dive"",
+                    ""type"": ""Button"",
+                    ""id"": ""e913f4ef-a11b-4471-9c61-ce1912ae9fa6"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -637,6 +646,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
                     ""action"": ""LeanRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""82ae3f46-3fb8-4918-8961-8dc22b199084"",
+                    ""path"": ""<Keyboard>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Dive"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1237,6 +1257,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Walk = m_Player.FindAction("Walk", throwIfNotFound: true);
         m_Player_LeanLeft = m_Player.FindAction("LeanLeft", throwIfNotFound: true);
         m_Player_LeanRight = m_Player.FindAction("LeanRight", throwIfNotFound: true);
+        m_Player_Dive = m_Player.FindAction("Dive", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1343,6 +1364,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Walk;
     private readonly InputAction m_Player_LeanLeft;
     private readonly InputAction m_Player_LeanRight;
+    private readonly InputAction m_Player_Dive;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1406,6 +1428,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/LeanRight".
         /// </summary>
         public InputAction @LeanRight => m_Wrapper.m_Player_LeanRight;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Dive".
+        /// </summary>
+        public InputAction @Dive => m_Wrapper.m_Player_Dive;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1471,6 +1497,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @LeanRight.started += instance.OnLeanRight;
             @LeanRight.performed += instance.OnLeanRight;
             @LeanRight.canceled += instance.OnLeanRight;
+            @Dive.started += instance.OnDive;
+            @Dive.performed += instance.OnDive;
+            @Dive.canceled += instance.OnDive;
         }
 
         /// <summary>
@@ -1521,6 +1550,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @LeanRight.started -= instance.OnLeanRight;
             @LeanRight.performed -= instance.OnLeanRight;
             @LeanRight.canceled -= instance.OnLeanRight;
+            @Dive.started -= instance.OnDive;
+            @Dive.performed -= instance.OnDive;
+            @Dive.canceled -= instance.OnDive;
         }
 
         /// <summary>
@@ -1912,6 +1944,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnLeanRight(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Dive" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDive(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
