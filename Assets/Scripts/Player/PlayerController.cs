@@ -33,6 +33,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float diveCooldown = 1f;
     [SerializeField] private float normalDiveForce = 6f;
     [SerializeField] private float sprintDiveForce = 12f;
+    // Минимальная скорость падения, при которой приземление считается жёстким.
+    [SerializeField] private float hardLandingVelocity = -8f;
+
+    // Запоминаем вертикальную скорость перед приземлением.
+    private float previousVerticalVelocity;
+
+    // Храним состояние grounded с предыдущего кадра.
+    private bool wasGrounded;
 
     private float currentSpeed;
 
@@ -54,6 +62,9 @@ public class PlayerController : MonoBehaviour
 
         stamina = GetComponent<Stamina>();
         currentSpeed = walkSpeed;
+
+        // Запоминаем начальное состояние игрока на земле.
+        wasGrounded = characterController.isGrounded;
     }
 
     private void OnEnable() => inputActions.Enable();
@@ -72,14 +83,22 @@ public class PlayerController : MonoBehaviour
 
         bool isWalkingSlow = inputActions.Player.Walk.IsPressed();
 
+        // Обрабатываем обычный dive по нажатию кнопки.
         HandleDive(movement);
 
+        // Обновляем состояние активного dive.
         UpdateDive();
 
+        // Запоминаем вертикальную скорость до обработки гравитации.
+        previousVerticalVelocity = velocity.y;
+
+        // Обрабатываем поворот игрока.
         HandleRotation(movement);
 
+        // Обрабатываем гравитацию.
         HandleGravity();
 
+        // Обрабатываем прыжок.
         HandleJump();
 
         float targetSpeed = GetCurrentSpeed(IsBoosting, isWalkingSlow);
@@ -101,6 +120,9 @@ public class PlayerController : MonoBehaviour
 
         characterController.Move(finalMovement * Time.deltaTime);
 
+        // Проверяем, произошло ли приземление после падения.
+        HandleLanding();
+
         HandleStamina(movement, IsBoosting);
 
         HandleStateChanges();
@@ -108,6 +130,9 @@ public class PlayerController : MonoBehaviour
         UpdateCharacterController();
 
         UpdateVisual();
+
+        // Запоминаем состояние земли для следующего кадра.
+        wasGrounded = characterController.isGrounded;
     }
 
     // Updates the visual representation of the player based on the current state (standing, crouching, prone).
@@ -433,6 +458,36 @@ public class PlayerController : MonoBehaviour
         {
             playerState = PlayerState.Prone;
         }
+    }
+
+    // Проверяет момент приземления после падения и переводит игрока в положение лёжа.
+    private void HandleLanding()
+    {
+        // Если игрок не был в воздухе, приземления не произошло.
+        if (wasGrounded)
+            return;
+
+        // Если игрок всё ещё находится в воздухе, ждём следующий кадр.
+        if (!characterController.isGrounded)
+            return;
+
+        // Если игрок уже выполняет dive, не вмешиваемся в его состояние.
+        if (playerState == PlayerState.Diving)
+            return;
+
+        // Если игрок уже лежит, ничего менять не нужно.
+        if (playerState == PlayerState.Prone)
+            return;
+
+        // Проверяем скорость падения перед приземлением.
+        if (previousVerticalVelocity > hardLandingVelocity)
+            return;
+
+        // Сильное падение переводит игрока в положение лёжа.
+        playerState = PlayerState.Prone;
+
+        // После приземления убираем вертикальную скорость.
+        velocity.y = -2f;
     }
 }
 
